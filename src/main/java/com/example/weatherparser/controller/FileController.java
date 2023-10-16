@@ -1,5 +1,6 @@
 package com.example.weatherparser.controller;
 
+import com.example.weatherparser.dto.WeatherDataDTO;
 import com.example.weatherparser.service.OpenWeatherMapJsonParser;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -8,15 +9,22 @@ import org.springframework.stereotype.Controller;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Scanner;
 
 @Controller
 @Slf4j
 public class FileController {
     private final OpenWeatherMapJsonParser openWeatherMapJsonParser;
+    private final WeatherDataDTO weatherDataDTO;
 
-    public FileController(OpenWeatherMapJsonParser openWeatherMapJsonParser) {
+    public FileController(OpenWeatherMapJsonParser openWeatherMapJsonParser, WeatherDataDTO weatherDataDTO) {
         this.openWeatherMapJsonParser = openWeatherMapJsonParser;
+        this.weatherDataDTO = weatherDataDTO;
     }
 
     @PostConstruct
@@ -30,6 +38,11 @@ public class FileController {
         // Вывод данных о погоде в консоль
         System.out.println("City: " + openWeatherMapJsonParser.getReadyForecast(city));
         writeStringToFile(openWeatherMapJsonParser.getReadyForecast(city));
+
+        // Сохраняем данные в бд
+        weatherDataDTO.saveCity(city);
+        weatherDataDTO.saveWeatherData(weatherDataDTO.getRegionId(city), openWeatherMapJsonParser.getCurrentTemperature(city), openWeatherMapJsonParser.getCurrentWeatherDescription(city), Timestamp.valueOf(LocalDateTime.now()));
+        log.info("Произведена запись в базуданных");
     }
 
     public void writeStringToFile(String content) {

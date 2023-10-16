@@ -78,7 +78,7 @@ public class OpenWeatherMapJsonParser {
         if (arrNode.isArray()) {
             for (final JsonNode objNode : arrNode) {
                 String forecastTime = objNode.get("dt_txt").toString();
-                if (forecastTime.contains("09:00") || forecastTime.contains("18:00")) {
+                if (forecastTime.contains("12:00")) {
                     weatherList.add(objNode.toString());
                 }
             }
@@ -128,5 +128,55 @@ public class OpenWeatherMapJsonParser {
 
         return String.format("%s   %s %s %s%s", formattedDateTime, formattedTemperature, formattedDescription, weatherIconCode, System.lineSeparator());
     }
+
+    public double getCurrentTemperature(String city) {
+        try {
+            String jsonRawData = downloadJsonRawData(city);
+            return parseCurrentTemperature(jsonRawData);
+        } catch (IllegalArgumentException e) {
+            log.error("Не могу найти город \"{}\".", city);
+            throw new IllegalArgumentException("Город не найден");
+        } catch (Exception e) {
+            log.error("Ошибка при получении данных о погоде: {}", e.getMessage());
+            throw new RuntimeException("Ошибка при получении данных о погоде");
+        }
+    }
+
+    private double parseCurrentTemperature(String data) throws Exception {
+        JsonNode currentWeatherNode = new ObjectMapper().readTree(data).get("list").get(0);
+
+        if (currentWeatherNode != null) {
+            return currentWeatherNode.get("main").get("temp").asDouble();
+        } else {
+            log.error("Данные о погоде на текущий момент не найдены.");
+            throw new RuntimeException("Данные о погоде на текущий момент не найдены");
+        }
+    }
+
+    public String getCurrentWeatherDescription(String city) {
+        try {
+            String jsonRawData = downloadJsonRawData(city);
+            return parseCurrentWeatherDescription(jsonRawData);
+        } catch (IllegalArgumentException e) {
+            log.error("Не могу найти город \"{}\".", city);
+            throw new IllegalArgumentException("Город не найден");
+        } catch (Exception e) {
+            log.error("Ошибка при получении данных о погоде: {}", e.getMessage());
+            throw new RuntimeException("Ошибка при получении данных о погоде");
+        }
+    }
+
+    private String parseCurrentWeatherDescription(String data) throws Exception {
+        JsonNode currentWeatherNode = new ObjectMapper().readTree(data).get("list").get(0);
+
+        if (currentWeatherNode != null) {
+            JsonNode weather = currentWeatherNode.get("weather").get(0);
+            return weather.get("main").asText();
+        } else {
+            log.error("Данные о погоде на текущий момент не найдены.");
+            throw new RuntimeException("Данные о погоде на текущий момент не найдены");
+        }
+    }
+
 }
 
